@@ -38,7 +38,7 @@ env:
   PROJECT_ID: 'bionic-unity-436718-q0'
   REGION: 'europe-north1'
   SERVICE: '13640756653-compute@developer.gserviceaccount.com'
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/13640756653/locations/global/workloadIdentityPools/github'
+  WORKLOAD_IDENTITY_PROVIDER: '//iam.googleapis.com/projects/13640756653/locations/global/workloadIdentityPools/github'
 
 jobs:
   deploy:
