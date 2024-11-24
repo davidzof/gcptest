@@ -36,3 +36,24 @@ https://console.cloud.google.com/apis/library/secretmanager.googleapis.com?proje
 
 gcloud builds connections create github gcptest --region=europe-north1
 
+Create workload identity 
+
+gcloud iam workload-identity-pools create "github" \
+  --project="bionic-unity-436718-q0" \
+  --location="global" \
+  --display-name="GitHub Actions Pool"
+
+Created workload identity pool [github].
+
+gcloud iam workload-identity-pools describe "github" \
+  --project="${PROJECT_ID}" \
+  --location="global" \
+  --format="value(name)"
+
+gcloud iam workload-identity-pools describe "github" \
+  --project="bionic-unity-436718-q0" \
+  --location="global" \
+  --format="value(name)"
+projects/13640756653/locations/global/workloadIdentityPools/github
+
+https://github.com/google-github-actions/auth#preferred-direct-workload-identity-federation
