@@ -12,12 +12,17 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
-          service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
           project_id: github-test-project-442816
+          install_components: '["gcloud", "docker-credential-gcr"]'
 
       - name: Authenticate Docker with Artifact Registry
         run: gcloud auth configure-docker europe-west9-docker.pkg.dev
