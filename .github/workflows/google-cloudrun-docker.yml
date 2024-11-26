@@ -39,7 +39,7 @@ jobs:
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy my-service \
+          gcloud run deploy hello-service \
             --image europe-west9-docker.pkg.dev/github-test-project-442816/myrepo/hello-world:$GITHUB_SHA \
             --region europe-west9 \
             --platform managed \
