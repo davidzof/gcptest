@@ -26,5 +26,5 @@ jobs:
         run: docker build -t europe-west9-docker.pkg.dev/github-test-project-442816/myrepo/hello-world:$GITHUB_SHA .
 
       - name: Push Docker Image
-        run: docker push europe-west9-docker.pkg.dev/github-test-project-442816/myrepo/my-app:$GITHUB_SHA
+        run: docker push europe-west9-docker.pkg.dev/github-test-project-442816/myrepo/hello-world:$GITHUB_SHA
 
