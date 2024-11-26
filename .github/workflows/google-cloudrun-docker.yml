@@ -37,3 +37,14 @@ jobs:
       - name: Push Docker Image
         run: docker push europe-west9-docker.pkg.dev/github-test-project-442816/myrepo/hello-world:$GITHUB_SHA
 
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy my-service \
+            --image europe-west9-docker.pkg.dev/github-test-project-442816/myrepo/hello-world:$GITHUB_SHA \
+            --region europe-west9 \
+            --platform managed \
+            --allow-unauthenticated
+
+      - name: Verify Deployment
+        run: gcloud run services list --region europe-west9
+
