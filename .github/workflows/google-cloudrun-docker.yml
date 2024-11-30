@@ -61,7 +61,7 @@ jobs:
 
       - name: Push Docker Image
         run: |
-          gcloud config set account ${{ env.SERVICE_ACCOUNT }}
+          gcloud auth login ${{ env.SERVICE_ACCOUNT }}
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:$GITHUB_SHA
 
       - name: Deploy to Cloud Run
