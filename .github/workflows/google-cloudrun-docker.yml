@@ -38,11 +38,11 @@ jobs:
           service_account: ${{ env.SERVICE_ACCOUNT }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
 
-      - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          version: 'latest'
-          project_id: ${{ env.PROJECT_ID }}
+#      - name: Set up Google Cloud SDK
+        #uses: google-github-actions/setup-gcloud@v2
+        #with:
+        #  version: 'latest'
+        #  project_id: ${{ env.PROJECT_ID }}
           
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
