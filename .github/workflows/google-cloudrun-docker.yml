@@ -37,7 +37,8 @@ jobs:
       - name: Verify Authentication
         run: |
           ls -l /home/runner/work/gcptest/gcptest/
-          echo $GOOGLE_APPLICATION_CREDENTIALS
+          cat  $GOOGLE_APPLICATION_CREDENTIALS
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
 
           
 #      - name: Set up Google Cloud SDK
