@@ -14,7 +14,7 @@ env:
   REPO_NAME: 'myrepo'
   IMAGE_NAME: 'hello-world'
   SERVICE_ACCOUNT: 'github-actions@github-test-project-442816.iam.gserviceaccount.com'
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/776737377276/locations/global/workloadIdentityPools/gitpool/providers/myrepo'
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/776737377276/locations/global/workloadIdentityPools/github/providers/myrepo'
   REGION: europe-west9
   
 jobs:
