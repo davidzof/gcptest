@@ -36,8 +36,7 @@ jobs:
 
       - name: Verify Authentication
         run: |
-          gcloud auth list
-          gcloud config list
+          ls -l /home/runner/work/gcptest/gcptest/
           echo $GOOGLE_APPLICATION_CREDENTIALS
 
           
