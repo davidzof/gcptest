@@ -22,11 +22,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Debug
+      - name: Verify Authentication
         run: |
-          echo "SERVICE_ACCOUNT=${{ env.SERVICE_ACCOUNT }}"
-          echo "WORKLOAD_IDENTITY_PROVIDER=${{ env.WORKLOAD_IDENTITY_PROVIDER }}"
-          echo "ID-TOKEN: ${{ github.token }}"
+          gcloud auth list
+          gcloud config list
+          echo $GOOGLE_APPLICATION_CREDENTIALS
+
           
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -49,15 +50,18 @@ jobs:
 
       - name: Authenticate Docker with Artifact Registry
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
-
-      - name: Verify Authentication
-        run: |
-          gcloud auth list
-          gcloud config list
+        
+      - name: Debug Docker Auth
+        run: cat ~/.docker/config.json
 
       - name: Build Docker Image
         run: |
           docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:$GITHUB_SHA .
+
+      - name: Re-authenticate Docker
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+          docker login -u _json_key --password-stdin https://${{ env.REGION }}-docker.pkg.dev < ~/.docker/config.json
 
       - name: Push Docker Image
         run: |
