@@ -38,7 +38,6 @@ jobs:
         run: |
           ls -l /home/runner/work/gcptest/gcptest/
           cat  $GOOGLE_APPLICATION_CREDENTIALS
-          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
 
           
 #      - name: Set up Google Cloud SDK
@@ -65,7 +64,10 @@ jobs:
         run: |
           gcloud auth print-access-token
 
-
+      - name: debug auth
+        run: |
+          gcloud auth list
+          gcloud projects list
 
       - name: Push Docker Image
         run: |
