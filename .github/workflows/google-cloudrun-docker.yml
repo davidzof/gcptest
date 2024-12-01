@@ -22,11 +22,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Verify Authentication
-        run: |
-          gcloud auth list
-          gcloud config list
-          echo $GOOGLE_APPLICATION_CREDENTIALS
+
 
           
       - name: Checkout Code
@@ -39,6 +35,13 @@ jobs:
           service_account: ${{ env.SERVICE_ACCOUNT }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
 
+      - name: Verify Authentication
+        run: |
+          gcloud auth list
+          gcloud config list
+          echo $GOOGLE_APPLICATION_CREDENTIALS
+
+          
 #      - name: Set up Google Cloud SDK
         #uses: google-github-actions/setup-gcloud@v2
         #with:
@@ -58,10 +61,12 @@ jobs:
         run: |
           docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:$GITHUB_SHA .
 
+
       - name: Re-authenticate Docker
         run: |
-          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
-          docker login -u _json_key --password-stdin https://${{ env.REGION }}-docker.pkg.dev < ~/.docker/config.json
+          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://europe-west9-docker.pkg.dev
+
+
 
       - name: Push Docker Image
         run: |
