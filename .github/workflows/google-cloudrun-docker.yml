@@ -22,9 +22,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
-
-          
       - name: Checkout Code
         uses: actions/checkout@v3
         
@@ -34,6 +31,8 @@ jobs:
 #         credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
           service_account: ${{ env.SERVICE_ACCOUNT }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+        env:
+          DEBUG: 'true'
 
       - name: Verify Authentication
         run: |
@@ -64,7 +63,7 @@ jobs:
 
       - name: Re-authenticate Docker
         run: |
-          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://europe-west9-docker.pkg.dev
+          gcloud auth print-access-token
 
 
 
