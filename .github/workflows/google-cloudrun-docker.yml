@@ -14,7 +14,7 @@ env:
   REPO_NAME: 'myrepo'
   IMAGE_NAME: 'hello-world'
   SERVICE_ACCOUNT: 'github-actions-sa@myproject-443614.iam.gserviceaccount.com'
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/256191479941/locations/global/workloadIdentityPools/gitpool/attribute.repository/davidzof/gcptest'
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/256191479941/locations/global/workloadIdentityPools/gitpool/myrepo/davidzof/gcptest'
 
   REGION: europe-west9
   
