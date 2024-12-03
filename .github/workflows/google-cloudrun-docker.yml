@@ -10,11 +10,11 @@ permissions:
   contents: read
 
 env:
-  PROJECT_ID: 'github-test-project-442816'
-  REPO_NAME: 'cloud-run-source-deploy'
+  PROJECT_ID: 'myproject-443614'
+  REPO_NAME: 'myrepo'
   IMAGE_NAME: 'hello-world'
-  SERVICE_ACCOUNT: 'github-actions@github-test-project-442816.iam.gserviceaccount.com'
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/776737377276/locations/global/workloadIdentityPools/github/providers/github-provider'
+  SERVICE_ACCOUNT: 'github-actions-sa@myproject-443614.iam.gserviceaccount.com'
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/256191479941/locations/global/workloadIdentityPools/gitpool/attribute.repository/davidzof/gcptest'
 
   REGION: europe-west9
   
