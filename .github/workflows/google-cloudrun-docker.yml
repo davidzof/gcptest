@@ -25,6 +25,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Authenticate with Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
 #  Uncomment to use a service account and comment the WIF line below
