@@ -32,6 +32,7 @@ jobs:
 #         credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
           service_account: ${{ env.SERVICE_ACCOUNT }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          token_format: access_token
         env:
           DEBUG: 'true'
           
