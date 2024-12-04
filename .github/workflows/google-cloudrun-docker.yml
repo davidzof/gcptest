@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-
-
-
 env:
   PROJECT_ID: 'myproject-443614'
   REPO_NAME: 'myrepo'
@@ -45,7 +42,7 @@ jobs:
           
       - name: 'Use gcloud CLI'
         run: |
-          'gcloud info'
+          gcloud info
           echo "access token" ${{ steps.auth.outputs.access_token }}
 
 #      - name: Authenticate Docker with Artifact Registry
