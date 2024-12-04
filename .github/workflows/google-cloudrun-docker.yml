@@ -44,7 +44,9 @@ jobs:
         #  project_id: ${{ env.PROJECT_ID }}
           
       - name: 'Use gcloud CLI'
-        run: 'gcloud info'
+        run: |
+          'gcloud info'
+          echo "access token" ${{ steps.auth.outputs.access_token }}
 
 #      - name: Authenticate Docker with Artifact Registry
 #        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
