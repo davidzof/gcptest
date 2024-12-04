@@ -1,4 +1,4 @@
-# app.py
+# Simple Flask App to return string to user
 from flask import Flask
 import datetime
 

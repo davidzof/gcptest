@@ -4,47 +4,82 @@ on:
   push:
     branches:
       - main
-
+env:
+  PROJECT_ID: 'myproject-443614'
+  REPO_NAME: 'myrepo'
+  IMAGE_NAME: 'hello-world'
+  SERVICE_ACCOUNT: 'github-actions-sa@myproject-443614.iam.gserviceaccount.com'
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/256191479941/locations/global/workloadIdentityPools/gitpool/providers/github-actions'
+  REGION: europe-west9
+  
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
+    permissions:
+      id-token: write
+      contents: read
+    
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         
       - name: Authenticate with Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
-          service_account: 'github-actions@github-test-project-442816.iam.gserviceaccount.com'
-          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+#  Uncomment to use a service account and comment the WIF line below
+#         credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          token_format: access_token
 
-      - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          version: 'latest'
-          project_id: github-test-project-442816
+          
+#      - name: Set up Google Cloud SDK
+        #uses: google-github-actions/setup-gcloud@v2
+        #with:
+        #  version: 'latest'
+        #  project_id: ${{ env.PROJECT_ID }}
           
       - name: 'Use gcloud CLI'
-        run: 'gcloud info'
+        run: |
+          gcloud info
+          echo "access token" ${{ steps.auth.outputs.access_token }}
 
-      - name: Authenticate Docker with Artifact Registry
-        run: gcloud auth configure-docker europe-west9-docker.pkg.dev
+#      - name: Authenticate Docker with Artifact Registry
+#        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry:  ${{ env.REGION }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
 
+        
       - name: Build Docker Image
-        run: docker build -t europe-west9-docker.pkg.dev/github-test-project-442816/myrepo/hello-world:$GITHUB_SHA .
+        run: |
+          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:$GITHUB_SHA .
 
+      - name: Debug Environment Variables
+        run: |
+          env
+          echo "REPO_NAME=${{ env.REPO_NAME }}"
+
+      - name: Print Docker Config
+        run: cat ~/.docker/config.json
+  
       - name: Push Docker Image
-        run: docker push europe-west9-docker.pkg.dev/github-test-project-442816/myrepo/hello-world:$GITHUB_SHA
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:$GITHUB_SHA
 
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy hello-service \
-            --image europe-west9-docker.pkg.dev/github-test-project-442816/myrepo/hello-world:$GITHUB_SHA \
-            --region europe-west9 \
+            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:$GITHUB_SHA \
+            --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated
-
+            
       - name: Verify Deployment
-        run: gcloud run services list --region europe-west9
+        run: gcloud run services list --region ${{ env.REGION }}
 
