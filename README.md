@@ -117,13 +117,13 @@ Point 6 requires extra permissions on the Google Service Account we created
 
 1. roles/storage.admin
 1. roles/run.admin
-1. run.viewer
-1. iam.serviceAccountUser
+1. roles/run.viewer
+1. roles/iam.serviceAccountUser
 
 Replace <ROLE> with each of the roles above
 
 ```bash
-$ gcloud projects add-iam-policy-binding github-test-project-442816 \
+$ gcloud projects add-iam-policy-binding <PROJECT_ID> \
   --member="serviceAccount:<SERVICE_ACCOUNT_NAME>@<PROJECT_ID>.iam.gserviceaccount.com" \
   --role="<ROLE>"
 ```
@@ -276,6 +276,21 @@ gcloud projects add-iam-policy-binding <PROJECT_ID> \
 
 In order to run the github workflow deploy action this API will need to be enabled by visiting https://console.developers.google.com/apis/api/run.googleapis.com/overview?project=<PROJECT_ID>
 
+#### Add roles for cloud run deploy
+
+Add the following extre roles to the service account: roles/storage.admin, roles/run.admin, roles/run.viewer, roles/iam.serviceAccountUser
+
+Your service account should have the following bindings
+
+```bash
+  role: roles/artifactregistry.writer
+  role: roles/iam.serviceAccountUser
+  role: roles/logging.viewer
+  role: roles/run.admin
+  role: roles/run.viewer
+  role: roles/secretmanager.secretAccessor
+  role: roles/storage.admin
+```
 
 ### Github Workflow
 
