@@ -113,28 +113,24 @@ Basically this
 5. pushes the tagged image to the GCP repo we created above
 6. installs the image as a public accessible service
 
-The last point requires extra permissions on the Google Service Account we created
+Point 6 requires extra permissions on the Google Service Account we created
+
+1. roles/storage.admin
+1. roles/run.admin
+1. run.viewer
+1. iam.serviceAccountUser
+
+Replace <ROLE> with each of the roles above
 
 ```bash
 $ gcloud projects add-iam-policy-binding github-test-project-442816 \
   --member="serviceAccount:<SERVICE_ACCOUNT_NAME>@<PROJECT_ID>.iam.gserviceaccount.com" \
-  --role="roles/run.admin"
-
-$ gcloud projects add-iam-policy-binding github-test-project-442816 \
-  --member="serviceAccount:<SERVICE_ACCOUNT_NAME>@<PROJECT_ID>.iam.gserviceaccount.com" \
-  --role="roles/storage.admin"
-
-$ gcloud projects add-iam-policy-binding github-test-project-442816 \
-  --member="serviceAccount:<SERVICE_ACCOUNT_NAME>@<PROJECT_ID>.iam.gserviceaccount.com" \
-  --role="roles/run.viewer"
-
-$ gcloud iam service-accounts add-iam-policy-binding 776737377276-compute@developer.gserviceaccount.com \
-  --member="serviceAccount:<SERVICE_ACCOUNT_NAME>@<PROJECT_ID>.iam.gserviceaccount.com" \
-  --role="roles/iam.serviceAccountUser"
+  --role="<ROLE>"
 ```
 
 This adds a lot of extra roles to the service account, which makes it less secure.
-You could create the service in the Google console using a specific image tag <VERSION> or latest. Whenever the docker image is pushed it should get redeployed. You don't need to create the service in the github workflow.
+
+As an alternative you could create the service in the Google console using a specific image tag <VERSION> or latest. Whenever the docker image is pushed it should get redeployed. You don't need to create the service in the github workflow.
 
 ## Debugging
 
@@ -154,7 +150,7 @@ $ docker build -t <REGION>-docker.pkg.dev/<PROJECT_ID>/<REPO_NAME>/my-app:latest
 $ docker push <REGION>-docker.pkg.dev/<PROJECT_ID>/<REPO_NAME>/my-app:latest
 ```
 
-## Authenticating with Workflow Identity Federation (WIF)
+## Authenticating with a Workflow Identity Federation (WIF)
 
 This is more secure as there is no shared secret key but is a lot more touchy to setup because
 a lot of the documentation on the web is out-of=date. This information was correct as of
@@ -186,29 +182,166 @@ gcloud projects add-iam-policy-binding <PROJECT_ID> \
     --role="<ROLE>"
 ```
 
-### Create a Workload IdentityFederation
+### Create a Workload Identity Federation
 
 A Workload Identity Federation is a feature that allows non-Google Cloud workloads (such as applications running outside of GCP) to access GCP resources securely without requiring a Google Cloud Service Account key. Instead, it uses OpenID Connect (OIDC) or similar token-based authentication mechanisms to establish a secure identity relationship between the external workload and GCP.
 
-Key Concepts: 
-1. The external application is mapped to a GCP service account which we created above
-1. GCP integrates with external identity providers (IdPs) like GitHub, AWS IAM or any other OIDC-compliant system.
-1. The external workload provides a token issued by its identity provider, which GCP verifies and exchanges for short-lived, GCP-specific access tokens. These tokens grant access to GCP resources.
+Authentication Flow:
+
+1. The external workload obtains a token from its identity provider (e.g., GitHub Actions provides an OIDC token).
+1. This token is sent to the Workload Identity Pool for validation.
+1. If the token is valid and meets conditions (like matching repository or branch), the workload gets a GCP identity bound to a service account.
+
 
 #### Create a workload Identity Pool
+
+The pool acts as a container for identities from an external identity provider. External identities must authenticate through this pool to gain access to GCP resources.
 
 ```bash
 gcloud iam workload-identity-pools create <POOL_NAME> \ --project=<PROJECT_ID> \
     --location="global" \ --display-name="GitHub Actions Pool"
+
 ```
 
+#### Get the full ID of the Workload Identity Pool
+
+```bash
+$ gcloud iam workload-identity-pools list \
+  --project=<PROJECT_ID> --location="global"
+
+displayName: GitHub Actions Pool
+name: projects/256191479941/locations/global/workloadIdentityPools/<POOL_NAME>
+state: ACTIVE
+```
+
+#### Create a Workload Identity Provider
+
+```bash
+gcloud iam workload-identity-pools providers create-oidc github-actions \
+  --location global --workload-identity-pool <POOL_NAME> \
+  --attribute-mapping "google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.aud=assertion.aud,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner" \
+  --attribute-condition="assertion.repository_owner == '<GITHUB_ORG>'" \
+  --issuer-uri "https://token.actions.githubusercontent.com"
+```
+
+*You must always use an attribute condition to restrict access to tokens issued by your GitHub organization.*
+
+*Explanation of the Mappings*
+* google.subject=assertion.sub: Maps the sub claim from GitHub's OIDC token to Google's google.subject.
+* attribute.repository=assertion.repository: Maps the repository claim from GitHub's OIDC token to a custom attribute called attribute.repository.
+
+These mappings ensure the workload identity federation can reference GitHub-specific claims in conditions.
+
+#### List Workload Identity Providers
+
+```bash
+gcloud iam workload-identity-pools providers list \
+  --workload-identity-pool="<POOL_NAME>" \
+  --project="<PROJECT_ID>" \
+  --location="global"
+```
+
+### Bind the Service Account to the Workload Identity Provider (WIP)
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding <SERVICE_ACCOUNT_NAME>@<PROJECT_ID>.iam.gserviceaccount.com \
+  --project=<PROJECT_ID> \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="principalSet://iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/<POOL_NAME>/attribute.repository/<GITHUB_OWNER>/<GITHUB_REPO>"
+```
+
+### Create an Artifact Registry Repository
+
+```bash
+gcloud artifacts repositories create <REPO_NAME> \
+    --repository-format=docker \
+    --location=<REGION> \
+    --description="Repository for storing Docker images"
+```
+
+Replace REPO_NAME with your choice of name and REGION with the region where you want the repo to exist, normally the same as your services, e.g. europe-west9
+
+### Grant Service Account permissions on the repo
+
+The service account needs to be able to write to the repository
+
+```bash
+gcloud projects add-iam-policy-binding <PROJECT_ID> \
+    --member="serviceAccount:<SERVICE_ACCOUNT_EMAIL>" \
+    --role="roles/artifactregistry.writer"
+
+```
+
+### Enable Cloud Run Admin API
+
+In order to run the github workflow deploy action this API will need to be enabled by visiting https://console.developers.google.com/apis/api/run.googleapis.com/overview?project=<PROJECT_ID>
+
+
+### Github Workflow
+
+The github workflow needs to authenticate with GCP using the service account and WIP.
+Note the checkout code needs to occur before the identification. We store the obtained access token for later use.
+
+```json
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Authenticate with Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          token_format: access_token
+```
+
+More information about this action: https://github.com/google-github-actions/auth?tab=readme-ov-file
+
+The access token obtained from the GCP authentication is used to connect to the google repository
+we created earlier
+
+```json
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry:  ${{ env.REGION }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+```
+
+The Docker login action is discussed in more detail here: https://github.com/marketplace/actions/docker-login
+
 ### Debugging
-talk about gcp logs
 
-https://github.com/docker/login-action
+It is possible to debug the workflow by adding additional steps. In this case we print information about our GCP connection and the access_token environment variable
 
-https://github.com/marketplace/actions/docker-login
+```json
+      - name: 'Use gcloud CLI'
+        run: |
+          gcloud info
+          echo "access token" ${{ steps.auth.outputs.access_token }}
+```
 
-https://github.com/google-github-actions/auth?tab=readme-ov-file#indirect-wif
+we can print the entire environment
+
+```json
+      - name: Debug Environment Variables
+        run: |
+          env
+          echo "REPO_NAME=${{ env.REPO_NAME }}"
+```
+
+Or information stored locally in files
+
+```json
+      - name: Print Docker Config
+        run: cat ~/.docker/config.json
+```
+
+The GCP Logs for a project can also give useful information about what is happening on the google cloud side of things.
+
+
+
 
 https://console.cloud.google.com/apis/api/iamcredentials.googleapis.com/metrics?project=myproject-443614
